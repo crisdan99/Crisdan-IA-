@@ -3,445 +3,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 CRISDAN AI - Video Editor 100% Funcional</title>
+    <title>🎬 CRISDAN AI - Video Generator Profesional</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success: linear-gradient(135deg, #10b981, #059669);
+            --danger: linear-gradient(135deg, #ef4444, #dc2626);
+            --warning: linear-gradient(135deg, #f59e0b, #d97706);
+            --glass: rgba(255,255,255,0.1);
+            --glass-border: rgba(255,255,255,0.2);
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         body {
-            font-family: 'Segoe UI', -apple-system, sans-serif;
-            background: linear-gradient(135deg, #1e1b4b 0%, #3b82f6 100%);
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
             color: white;
             min-height: 100vh;
             overflow-x: hidden;
         }
-        .header {
-            text-align: center;
-            padding: 2rem;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(20px);
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
         }
-        .header h1 {
-            font-size: 3rem;
-            background: linear-gradient(45deg, #fff, #60a5fa);
+        /* HEADER */
+        .header {
+            padding: 2rem 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .logo {
+            font-size: 4rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #fff, #a5b4fc, #60a5fa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
+            text-shadow: 0 0 30px rgba(96,165,250,0.5);
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        /* AUTH */
+        #g_id_onload {
+            visibility: hidden;
+        }
+        .auth-section {
+            max-width: 400px;
+            margin: 2rem auto;
             padding: 2rem;
         }
-        .editor {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(25px);
-            border-radius: 25px;
-            padding: 3rem;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+        /* DASHBOARD */
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: none;
         }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
         }
-        .input-group {
+        .credits {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--warning);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* PLANS */
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .plan-card {
+            padding: 2.5rem 2rem;
+            text-align: center;
             position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .plan-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 35px 70px rgba(0,0,0,0.4);
+        }
+        .plan-card.popular {
+            border: 3px solid #60a5fa;
+            background: rgba(96,165,250,0.1);
+        }
+        .plan-price {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 1rem 0;
+        }
+        /* EDITOR */
+        .editor-section {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+        .prompt-area {
+            padding: 2.5rem;
+        }
+        .model-selector {
+            position: sticky;
+            top: 2rem;
+        }
+        .model-card {
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 16px;
+        }
+        .model-card:hover, .model-card.active {
+            background: rgba(96,165,250,0.2);
+            border: 2px solid #60a5fa;
+        }
+        .model-pro {
+            border-left: 5px solid #10b981;
+        }
+        .model-premium {
+            border-left: 5px solid #f59e0b;
+            background: rgba(245,158,11,0.1);
+        }
+        /* FORM */
+        .form-group {
+            margin-bottom: 2rem;
         }
         label {
             display: block;
             margin-bottom: 0.8rem;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
         input, textarea, select {
             width: 100%;
             padding: 1.2rem 1.5rem;
-            background: rgba(255,255,255,0.15);
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 15px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
             color: white;
             font-size: 1rem;
-            backdrop-filter: blur(10px);
             transition: all 0.3s ease;
-        }
-        input::placeholder, textarea::placeholder {
-            color: rgba(255,255,255,0.6);
         }
         input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #60a5fa;
-            background: rgba(255,255,255,0.2);
             box-shadow: 0 0 0 4px rgba(96,165,250,0.2);
         }
-        .btn-generate {
+        .btn {
             width: 100%;
-            background: linear-gradient(45deg, #ef4444, #f59e0b, #10b981);
-            color: white;
+            padding: 1.5rem 2rem;
             border: none;
-            padding: 1.8rem;
-            font-size: 1.4rem;
-            border-radius: 25px;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            font-weight: 600;
             cursor: pointer;
-            font-weight: bold;
+            transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 20px 40px rgba(239,68,68,0.4);
-            position: relative;
-            overflow: hidden;
         }
-        .btn-generate:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 30px 60px rgba(239,68,68,0.6);
+        .btn-primary {
+            background: var(--primary);
+            color: white;
         }
-        .btn-generate:disabled {
-            opacity: 0.7;
+        .btn:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
         }
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        /* STATUS */
         .status {
             padding: 2rem;
-            border-radius: 20px;
+            border-radius: 16px;
             margin: 2rem 0;
             text-align: center;
-            font-size: 1.2rem;
             font-weight: 500;
-            backdrop-filter: blur(15px);
+            display: none;
         }
-        .status.loading { 
-            background: rgba(59,130,246,0.3); 
-            border: 2px solid #60a5fa;
-        }
-        .status.success { 
-            background: rgba(16,185,129,0.3); 
-            border: 2px solid #10b981;
-        }
-        .status.error { 
-            background: rgba(239,68,68,0.3); 
-            border: 2px solid #ef4444;
-        }
+        .status.show { display: block; }
+        .status.loading { background: rgba(96,165,250,0.2); }
+        .status.success { background: rgba(16,185,129,0.2); }
+        .status.error { background: rgba(239,68,68,0.2); }
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid #60a5fa;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 1.5rem;
+            margin: 0 auto 1rem;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .video-preview {
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* VIDEO PREVIEW */
+        #videoPreview {
             width: 100%;
-            max-width: 900px;
-            height: 506px;
+            height: 400px;
             background: linear-gradient(45deg, #1e1b4b, #1e40af);
-            border-radius: 20px;
+            border-radius: 16px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin: 2rem auto;
-            border: 3px solid rgba(255,255,255,0.2);
-            font-size: 1.5rem;
-            text-align: center;
-            padding: 3rem;
+            font-size: 1.3rem;
+            margin-top: 2rem;
+            border: 2px dashed rgba(255,255,255,0.3);
         }
-        .progress-bar {
-            width: 100%;
-            height: 12px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 1.5rem 0;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #60a5fa, #10b981, #ef4444);
-            width: 0%;
-            transition: width 0.5s ease;
-            border-radius: 10px;
-            animation: progress-glow 2s ease-in-out infinite alternate;
-        }
-        @keyframes progress-glow {
-            0% { box-shadow: 0 0 5px #60a5fa; }
-            100% { box-shadow: 0 0 20px #10b981; }
-        }
-        .footer {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: rgba(0,0,0,0.5);
-            margin-top: 4rem;
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .editor-section { grid-template-columns: 1fr; }
+            .model-selector { position: static; }
         }
         @media (max-width: 768px) {
-            .form-row { grid-template-columns: 1fr; }
-            .header h1 { font-size: 2rem; }
-            .editor { padding: 2rem 1.5rem; }
+            .logo { font-size: 2.5rem; }
+            .plans-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <header class="header">
-        <h1>🎬 CRISDAN AI</h1>
-        <p><strong>Video Editor Profesional</strong> • 100% Funcional • Sin Errores</p>
-        <p style="font-size: 0.9rem; opacity: 0.8;">© 2024 Crisdan - Todos los derechos reservados</p>
-    </header>
+    <!-- AUTH SECTION -->
+    <div id="authSection" class="auth-section glass" style="max-width: 500px; margin: 5rem auto; padding: 3rem; text-align: center;">
+        <h1 class="logo">CRISDAN AI</h1>
+        <p style="margin: 2rem 0; font-size: 1.2rem; opacity: 0.9;">El generador de videos IA más profesional</p>
+        <div id="g_id_signin" 
+             data-type="standard"
+             data-size="large"
+             data-theme="outline"
+             data-text="sign_in_with"
+             data-shape="rectangular"
+             data-logo_alignment="left">
+        </div>
+        <p style="margin-top: 2rem; opacity: 0.7; font-size: 0.9rem;">Inicia sesión con Google para obtener <strong>200 créditos GRATIS</strong></p>
+    </div>
 
-    <div class="container">
-        <div class="editor">
-            <h2 style="text-align: center; margin-bottom: 3rem; font-size: 2.5rem;">
-                🎯 Crea Videos Profesionales en Segundos
-            </h2>
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+        <div class="user-info glass" style="padding: 2rem;">
+            <div>
+                <div style="font-size: 1.2rem; opacity: 0.9;">Hola, <span id="userName">-</span></div>
+                <div id="userEmail" style="font-size: 0.9rem; opacity: 0.7;">email@ejemplo.com</div>
+            </div>
+            <div class="credits" id="creditsDisplay">200 créditos</div>
+            <button class="btn btn-primary" onclick="logout()" style="padding: 1rem 2rem; width: auto;">Cerrar Sesión</button>
+        </div>
 
-            <div class="form-row">
-                <div class="input-group">
-                    <label>📝 Prompt del Video:</label>
-                    <textarea 
-                        id="prompt" 
-                        placeholder="Ej: 'Video épico de drone sobre montañas, transiciones suaves, texto Crisdan AI, música profesional'"
-                        rows="4"
-                    ></textarea>
+        <!-- PLANS -->
+        <div style="text-align: center; margin: 3rem 0;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Planes Premium</h2>
+            <p>Desbloquea modelos PRO y más créditos</p>
+        </div>
+        <div class="plans-grid">
+            <div class="plan-card glass">
+                <h3>Gratis</h3>
+                <div class="plan-price">$0 <span style="font-size: 1rem;">/mes</span></div>
+                <ul style="list-style: none; padding: 2rem 0;">
+                    <li>✅ 200 créditos/mes</li>
+                    <li>✅ Modelo Basic</li>
+                    <li>✅ Videos 720p</li>
+                    <li>❌ Sin prioridad</li>
+                </ul>
+                <button class="btn btn-primary" disabled>Actual</button>
+            </div>
+            <div class="plan-card glass popular">
+                <div style="position: absolute; top: 1rem; right: 1rem; background: #60a5fa; color: black; padding: 0.3rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">POPULAR</div>
+                <h3>Pro</h3>
+                <div class="plan-price">$19 <span style="font-size: 1rem;">/mes</span></div>
+                <ul style="list-style: none; padding: 2rem 0;">
+                    <li>✅ 2,000 créditos/mes</li>
+                    <li>✅ Modelos Pro + Premium</li>
+                    <li>✅ Videos 4K 60fps</li>
+                    <li>✅ Render prioritario</li>
+                </ul>
+                <button class="btn btn-success" onclick="upgradePlan('pro')">Elegir Pro</button>
+            </div>
+            <div class="plan-card glass">
+                <h3>Business</h3>
+                <div class="plan-price">$49 <span style="font-size: 1rem;">/mes</span></div>
+                <ul style="list-style: none; padding: 2rem 0;">
+                    <li>✅ 5,000 créditos/mes</li>
+                    <li>✅ Todo ilimitado</li>
+                    <li>✅ API acceso</li>
+                    <li>✅ Soporte 24/7</li>
+                </ul>
+                <button class="btn btn-primary" onclick="upgradePlan('business')">Elegir Business</button>
+            </div>
+        </div>
+
+        <!-- EDITOR -->
+        <div class="glass" style="padding: 3rem;">
+            <div class="editor-section">
+                <div class="prompt-area">
+                    <h2 style="font-size: 2.2rem; margin-bottom: 2rem;">🎬 Genera tu Video IA</h2>
+                    
+                    <div class="form-group">
+                        <label>📝 Prompt detallado:</label>
+                        <textarea id="prompt" rows="5" 
+                            placeholder="Ej: 'Video profesional 15s: drone futurista sobre ciudad cyberpunk al atardecer, transiciones glitch CapCut, texto animado Crisdan AI, música épica, 4K 60fps, estilo cinematic Hollywood'"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div class="form-group">
+                            <label>⏱️ Duración:</label>
+                            <input type="range" id="duration" min="5" max="60" value="15">
+                            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                                <span id="durationDisplay">15 segundos</span>
+                                <span id="creditsCost">10 créditos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="generateBtn" onclick="generateVideo()" style="font-size: 1.4rem; padding: 1.8rem;">
+                        🚀 Generar Video (<span id="currentCost">10</span> créditos)
+                    </button>
+
+                    <div id="status" class="status"></div>
+                    <div id="videoPreview"></div>
                 </div>
-                <div class="input-group">
-                    <label>⚙️ Configuración:</label>
-                    <select id="style">
-                        <option value="cinematic">🎥 Cinemático (Filmora Pro)</option>
-                        <option value="tiktok">📱 TikTok Viral (CapCut)</option>
-                        <option value="corporate">💼 Corporativo 4K</option>
-                        <option value="gaming">🎮 Gaming eSports</option>
-                        <option value="music">🎵 Music Visualizer</option>
-                    </select>
-                    <br><br>
-                    <input type="range" id="duration" min="8" max="45" value="15">
-                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem; margin-top: 0.5rem;">
-                        <span>Duración: <span id="durationValue">15s</span></span>
-                        <span id="quality">Alta Calidad</span>
+
+                <div class="model-selector">
+                    <h3 style="margin-bottom: 1.5rem;">🤖 Modelos de IA</h3>
+                    
+                    <div class="model-card active" data-model="basic">
+                        <strong>Basic</strong> (Gratis)
+                        <div style="font-size: 0.9rem; opacity: 0.8;">Videos 720p • 10 créditos</div>
+                    </div>
+                    
+                    <div class="model-card model-pro" data-model="pro">
+                        <strong>Pro</strong> ⭐
+                        <div style="font-size: 0.9rem; opacity: 0.8;">1080p 30fps • 20 créditos</div>
+                    </div>
+                    
+                    <div class="model-card model-premium" data-model="premium">
+                        <strong>Premium</strong> 🔥
+                        <div style="font-size: 0.9rem; opacity: 0.8;">4K 60fps • 50 créditos</div>
                     </div>
                 </div>
-            </div>
-
-            <div style="text-align: center;">
-                <button class="btn-generate" id="generateBtn" onclick="generateVideo()">
-                    🚀 GENERAR VIDEO PROFESIONAL
-                </button>
-            </div>
-
-            <!-- STATUS -->
-            <div id="status" class="status" style="display: none;"></div>
-            <div id="progress" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div id="progressText" style="text-align: center; font-size: 1.1rem; margin-top: 1rem;"></div>
-            </div>
-
-            <!-- VIDEO RESULTADO -->
-            <div id="result" style="display: none; text-align: center;">
-                <div class="video-preview" id="videoPreview">
-                    🎥 <strong>¡VIDEO LISTO!</strong><br>
-                    Presiona descargar para obtener tu MP4 1080p
-                </div>
-                <br>
-                <button class="btn-generate" onclick="downloadVideo()" style="background: linear-gradient(45deg, #10b981, #059669); max-width: 400px; margin: 0 auto; display: block;">
-                    💾 DESCARGAR VIDEO HD (MP4)
-                </button>
-                <p style="margin-top: 1rem; opacity: 0.8; font-size: 0.9rem;">
-                    © Crisdan AI 2024 - Video profesional generado
-                </p>
             </div>
         </div>
     </div>
 
-    <footer class="footer">
-        <p><strong>© 2024 Crisdan AI</strong> - Powered by Canvas 2D + WebCodecs</p>
-        <p>✅ 100% Cliente • Sin APIs externas • Funciona offline</p>
-    </footer>
-
     <script>
-        // === CRISDAN AI - VERSIÓN 100% ESTABLE ✅ ===
-        let videoBlob = null;
-        let animationId = null;
+        // === CRISDAN AI - SISTEMA COMPLETO PROFESIONAL ===
+        let currentUser = null;
+        let credits = 200;
+        let currentPlan = 'free';
+        let selectedModel = 'basic';
 
-        // CONTROLES UI
-        document.getElementById('duration').addEventListener('input', function() {
-            document.getElementById('durationValue').textContent = this.value + 's';
-        });
-
-        // === GENERADOR VIDEO REAL (SIN ERRORES) ===
-        async function generateVideo() {
-            const prompt = document.getElementById('prompt').value.trim();
-            const duration = parseInt(document.getElementById('duration').value);
-            const style = document.getElementById('style').value;
-
-            if (!prompt) {
-                showStatus('error', '⚠️ Escribe un prompt para generar tu video');
-                return;
-            }
-
-            // INICIAR PROCESO
-            const btn = document.getElementById('generateBtn');
-            btn.disabled = true;
-            btn.textContent = '⏳ Generando...';
-            
-            showStatus('loading', '🚀 Iniciando Crisdan AI Engine');
-            showProgress(0, 'Preparando renderizador profesional...');
-
-            try {
-                // PASO 1: CREAR VIDEO CANVAS (100% REAL)
-                await createProfessionalVideo(prompt, duration, style);
-                
-                // PASO 2: MOSTRAR RESULTADO
-                showResult();
-                showStatus('success', '✅ ¡Video profesional generado en HD!');
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showStatus('error', '❌ Error inesperado. Recarga y reintenta.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '🚀 GENERAR NUEVO VIDEO';
-                hideProgress();
-            }
-        }
-
-        // === CREADOR VIDEO PROFESIONAL ===
-        async function createProfessionalVideo(prompt, duration, style) {
-            return new Promise((resolve) => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 1920;
-                canvas.height = 1080;
-
-                const fps = 30;
-                const totalFrames = duration * fps;
-                const stream = canvas.captureStream(fps);
-                const recorder = new MediaRecorder(stream, {
-                    mimeType: 'video/webm;codecs=vp9'
-                });
-
-                const chunks = [];
-                recorder.ondataavailable = (e) => chunks.push(e.data);
-                recorder.onstop = async () => {
-                    const blob = new Blob(chunks, { type: 'video/webm' });
-                    videoBlob = await convertToMP4(blob);
-                    resolve();
-                };
-
-                // ANIMACIÓN PROFESIONAL
-                let frame = 0;
-                function animate() {
-                    if (frame >= totalFrames) {
-                        recorder.stop();
-                        return;
-                    }
-
-                    // FONDO GRADIENTE DINÁMICO
-                    const gradient = ctx.createLinearGradient(0, 0, 1920, 1080);
-                    const hue = (frame * 0.5) % 360;
-                    gradient.addColorStop(0, `hsl(${hue}, 70%, 15%)`);
-                    gradient.addColorStop(0.5, `hsl(${(hue+60)%360}, 70%, 20%)`);
-                    gradient.addColorStop(1, `hsl(${(hue+120)%360}, 70%, 10%)`);
-                    ctx.fillStyle = gradient;
-                    ctx.fillRect(0, 0, 1920, 1080);
-
-                    // PARTÍCULAS IA (estilo profesional)
-                    for (let i = 0; i < 80; i++) {
-                        const x = (frame * 3 + i * 17) % 1920;
-                        const y = Math.sin(frame * 0.05 + i) * 200 + 540;
-                        const size = 2 + Math.sin(frame * 0.1 + i) * 3;
-                        
-                        ctx.save();
-                        ctx.translate(x, y);
-                        ctx.rotate(frame * 0.02);
-                        ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.sin(frame * 0.08) * 0.2})`;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, size, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.restore();
-                    }
-
-                    // TEXTO ANIMADO CRISDAN (estilo CapCut/Filmora)
-                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                    ctx.fillRect(0, 0, 1920, 1080);
-
-                    ctx.shadowColor = '#60a5fa';
-                    ctx.shadowBlur = 30;
-                    ctx.fillStyle = 'white';
-                    ctx.font = 'bold 140px Arial, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    
-                    const text = frame < totalFrames * 0.3 ? 'CRISDAN' : 
-                                frame < totalFrames * 0.6 ? 'AI VIDEO' : 'PROFESSIONAL';
-                    ctx.fillText(text, 960, 540);
-
-                    // SUBTÍTULO PROMPT
-                    ctx.shadowBlur = 10;
-                    ctx.font = '60px Arial';
-                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                    ctx.fillText(prompt.substring(0, 40) + '...', 960, 700);
-
-                    // BORDES GLITCH
-                    if (style === 'tiktok') {
-                        ctx.strokeStyle = '#ef4444';
-                        ctx.lineWidth = 4;
-                        ctx.strokeRect(50, 50, 1820, 980);
-                    }
-
-                    updateProgress((frame / totalFrames) * 80 + 10, 
-                        `🎬 Renderizando frame ${frame}/${totalFrames} (${style})`);
-
-                    frame++;
-                    animationId = requestAnimationFrame(animate);
-                }
-
-                recorder.start();
-                animate();
+        // GOOGLE AUTH
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: 'TU_GOOGLE_CLIENT_ID_AQUI.apps.googleusercontent.com', // Reemplaza con tu Client ID
+                callback: handleCredentialResponse,
+                auto_select: false,
+                cancel_on_tap_outside: false,
             });
+        };
+
+        function handleCredentialResponse(response) {
+            try {
+                const payload = JSON.parse(atob(response.credential.split('.')[1]));
+                currentUser = {
+                    name: payload.name,
+                    email: payload.email,
+                    picture: payload.picture
+                };
+                
+                // Simular backend - en producción: enviar a tu API
+                credits = 200;
+                updateUI();
+                document.getElementById('authSection').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+            } catch (e) {
+                console.error('Auth error:', e);
+            }
         }
 
-        // === CONVERTIR A MP4 (WebCodecs) ===
-        async function convertToMP4(webmBlob) {
-            const buffer = await webmBlob.arrayBuffer();
-            // Crear MP4 compatible directamente
-            const mp4Blob = new Blob([buffer], { type: 'video/mp4' });
-            return mp4Blob;
+        function logout() {
+            currentUser = null;
+            credits = 0;
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('authSection').style.display = 'block';
         }
 
-        // === UI HELPERS ===
-        function showStatus(type, message) {
-            const el = document.getElementById('status');
-            el.className = `status ${type}`;
-            el.innerHTML = `<div class="spinner"></div>${message}`;
-            el.style.display = 'block';
+        // UI UPDATES
+        function updateUI() {
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userEmail').textContent = currentUser.email;
+            document.getElementById('creditsDisplay').textContent = `${credits} créditos`;
         }
 
-        function showProgress(percent, text) {
-            document.getElementById('progress').style.display = 'block';
-            document.getElementById('progressFill').style.width = percent + '%';
-            document.getElementById('progressText').textContent = text;
-        }
-
-        function hideProgress() {
-            document.getElementById('progress').style.display = 'none';
-            if (animationId) cancelAnimationFrame(animationId);
-        }
-
-        function showResult() {
-            document.getElementById('result').style.display = 'block';
-            document.getElementById('videoPreview').innerHTML = 
-                '✅ <strong>VIDEO 1080p GENERADO</strong><br>' +
-                '• Partículas IA dinámicas<br>' +
-                '• Transiciones profesionales<br>' +
-                '• Texto animado Crisdan<br>' +
-                '• 30fps suave';
-        }
-
-        function downloadVideo
+        // MODEL SELECTION
+        document.querySelectorAll('.model-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.model-card').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                selectedModel = this.dataset.model
