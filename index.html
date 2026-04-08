@@ -1,431 +1,838 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎬 CRISDAN AI - Video Generator Profesional</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --success: linear-gradient(135deg, #10b981, #059669);
-            --danger: linear-gradient(135deg, #ef4444, #dc2626);
-            --warning: linear-gradient(135deg, #f59e0b, #d97706);
-            --glass: rgba(255,255,255,0.1);
-            --glass-border: rgba(255,255,255,0.2);
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-            color: white;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        .glass {
-            background: var(--glass);
-            backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-        }
-        /* HEADER */
-        .header {
-            padding: 2rem 0;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            animation: shine 3s infinite;
-        }
-        @keyframes shine {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-        .logo {
-            font-size: 4rem;
-            font-weight: 800;
-            background: linear-gradient(45deg, #fff, #a5b4fc, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 0 30px rgba(96,165,250,0.5);
-        }
-        /* AUTH */
-        #g_id_onload {
-            visibility: hidden;
-        }
-        .auth-section {
-            max-width: 400px;
-            margin: 2rem auto;
-            padding: 2rem;
-        }
-        /* DASHBOARD */
-        .dashboard {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-            display: none;
-        }
-        .user-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-        }
-        .credits {
-            font-size: 1.8rem;
-            font-weight: 700;
-            background: var(--warning);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        /* PLANS */
-        .plans-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin: 3rem 0;
-        }
-        .plan-card {
-            padding: 2.5rem 2rem;
-            text-align: center;
-            position: relative;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .plan-card:hover {
-            transform: translateY(-15px);
-            box-shadow: 0 35px 70px rgba(0,0,0,0.4);
-        }
-        .plan-card.popular {
-            border: 3px solid #60a5fa;
-            background: rgba(96,165,250,0.1);
-        }
-        .plan-price {
-            font-size: 3rem;
-            font-weight: 800;
-            margin: 1rem 0;
-        }
-        /* EDITOR */
-        .editor-section {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 3rem;
-            margin-top: 3rem;
-        }
-        .prompt-area {
-            padding: 2.5rem;
-        }
-        .model-selector {
-            position: sticky;
-            top: 2rem;
-        }
-        .model-card {
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border-radius: 16px;
-        }
-        .model-card:hover, .model-card.active {
-            background: rgba(96,165,250,0.2);
-            border: 2px solid #60a5fa;
-        }
-        .model-pro {
-            border-left: 5px solid #10b981;
-        }
-        .model-premium {
-            border-left: 5px solid #f59e0b;
-            background: rgba(245,158,11,0.1);
-        }
-        /* FORM */
-        .form-group {
-            margin-bottom: 2rem;
-        }
-        label {
-            display: block;
-            margin-bottom: 0.8rem;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        input, textarea, select {
-            width: 100%;
-            padding: 1.2rem 1.5rem;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 16px;
-            color: white;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #60a5fa;
-            box-shadow: 0 0 0 4px rgba(96,165,250,0.2);
-        }
-        .btn {
-            width: 100%;
-            padding: 1.5rem 2rem;
-            border: none;
-            border-radius: 16px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        /* STATUS */
-        .status {
-            padding: 2rem;
-            border-radius: 16px;
-            margin: 2rem 0;
-            text-align: center;
-            font-weight: 500;
-            display: none;
-        }
-        .status.show { display: block; }
-        .status.loading { background: rgba(96,165,250,0.2); }
-        .status.success { background: rgba(16,185,129,0.2); }
-        .status.error { background: rgba(239,68,68,0.2); }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* VIDEO PREVIEW */
-        #videoPreview {
-            width: 100%;
-            height: 400px;
-            background: linear-gradient(45deg, #1e1b4b, #1e40af);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            margin-top: 2rem;
-            border: 2px dashed rgba(255,255,255,0.3);
-        }
-        /* RESPONSIVE */
-        @media (max-width: 1024px) {
-            .editor-section { grid-template-columns: 1fr; }
-            .model-selector { position: static; }
-        }
-        @media (max-width: 768px) {
-            .logo { font-size: 2.5rem; }
-            .plans-grid { grid-template-columns: 1fr; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎬 CRISDAN AI - Video Generator</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg1: #0f0f23;
+      --bg2: #1a1a2e;
+      --bg3: #16213e;
+      --glass: rgba(255,255,255,0.08);
+      --glass-border: rgba(255,255,255,0.16);
+      --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --success: linear-gradient(135deg, #10b981, #059669);
+      --danger: linear-gradient(135deg, #ef4444, #dc2626);
+      --warning: linear-gradient(135deg, #f59e0b, #d97706);
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.72);
+      --accent: #60a5fa;
+    }* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(96,165,250,0.18), transparent 30%),
+    radial-gradient(circle at top right, rgba(168,85,247,0.18), transparent 32%),
+    linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg3) 100%);
+  overflow-x: hidden;
+}
+
+.container {
+  width: min(1400px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.30);
+}
+
+.header {
+  text-align: center;
+  padding: 28px 18px 8px;
+}
+.logo {
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+  background: linear-gradient(45deg, #fff, #a5b4fc, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 24px rgba(96,165,250,0.35);
+}
+.subtitle {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  max-width: 740px;
+  margin: 0 auto;
+}
+
+.auth-section, .dashboard { display: none; }
+.auth-section.active, .dashboard.active { display: block; }
+
+.auth-section {
+  max-width: 520px;
+  margin: 42px auto 0;
+  padding: 28px;
+  text-align: center;
+}
+.auth-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px;
+  margin-top: 24px;
+}
+.user-block {
+  display: grid;
+  gap: 4px;
+}
+.user-name { font-weight: 700; font-size: 1.05rem; }
+.user-email { color: var(--muted); font-size: 0.92rem; }
+.credits {
+  font-size: 1.45rem;
+  font-weight: 800;
+  background: var(--warning);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+}
+
+.btn {
+  border: 0;
+  border-radius: 16px;
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+  color: #fff;
+  user-select: none;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--primary); }
+.btn-success { background: var(--success); }
+.btn-danger { background: var(--danger); }
+.btn-ghost {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+.grid-plans {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 18px;
+}
+.plan-card {
+  position: relative;
+  padding: 20px;
+  text-align: center;
+}
+.plan-card.popular {
+  border: 2px solid rgba(96,165,250,0.95);
+  background: rgba(96,165,250,0.10);
+}
+.badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: #60a5fa;
+  color: #08111f;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.plan-price {
+  font-size: 2.6rem;
+  font-weight: 800;
+  margin: 12px 0 10px;
+}
+.plan-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 20px;
+  color: rgba(255,255,255,0.88);
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: 1.6fr 0.9fr;
+  gap: 18px;
+  margin-top: 18px;
+  align-items: start;
+}
+.panel { padding: 22px; }
+.form-group { margin-bottom: 18px; }
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+input, textarea, select {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font: inherit;
+  outline: none;
+}
+textarea { min-height: 132px; resize: vertical; }
+input:focus, textarea:focus, select:focus {
+  border-color: rgba(96,165,250,0.95);
+  box-shadow: 0 0 0 4px rgba(96,165,250,0.14);
+}
+input[type="range"] { padding: 0; }
+.range-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.tiny-note {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.68);
+  line-height: 1.5;
+}
+
+.model-selector {
+  position: sticky;
+  top: 18px;
+}
+.model-card {
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+.model-card:hover { transform: translateY(-1px); }
+.model-card.active {
+  background: rgba(96,165,250,0.18);
+  border-color: rgba(96,165,250,0.95);
+}
+.model-pro { border-left: 5px solid #10b981; }
+.model-premium { border-left: 5px solid #f59e0b; }
+.model-cost { color: rgba(255,255,255,0.72); font-size: 0.92rem; margin-top: 4px; }
+
+.status {
+  display: none;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.status.show { display: block; }
+.status.loading { background: rgba(96,165,250,0.16); }
+.status.success { background: rgba(16,185,129,0.16); }
+.status.error { background: rgba(239,68,68,0.16); }
+.spinner {
+  width: 34px;
+  height: 34px;
+  margin: 0 auto 12px;
+  border: 3px solid rgba(255,255,255,0.22);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.preview-wrap {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0b1020;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.14);
+}
+.download-link {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+}
+
+.hidden-canvas { display: none; }
+
+@media (max-width: 1024px) {
+  .editor { grid-template-columns: 1fr; }
+  .model-selector { position: static; }
+}
+@media (max-width: 768px) {
+  .container { width: min(100% - 14px, 1400px); }
+  .panel, .auth-section { padding: 18px; }
+  .topbar { flex-direction: column; align-items: stretch; }
+  .credits { font-size: 1.2rem; }
+}
+
+  </style>
 </head>
 <body>
-    <!-- AUTH SECTION -->
-    <div id="authSection" class="auth-section glass" style="max-width: 500px; margin: 5rem auto; padding: 3rem; text-align: center;">
-        <h1 class="logo">CRISDAN AI</h1>
-        <p style="margin: 2rem 0; font-size: 1.2rem; opacity: 0.9;">El generador de videos IA más profesional</p>
-        <div id="g_id_signin" 
-             data-type="standard"
-             data-size="large"
-             data-theme="outline"
-             data-text="sign_in_with"
-             data-shape="rectangular"
-             data-logo_alignment="left">
-        </div>
-        <p style="margin-top: 2rem; opacity: 0.7; font-size: 0.9rem;">Inicia sesión con Google para obtener <strong>200 créditos GRATIS</strong></p>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">CRISDAN AI</h1>
+      <p class="subtitle">Generador visual en el navegador con inicio de sesión de Google, créditos locales y exportación real de video sin servidor.</p>
+    </div><section id="authSection" class="auth-section glass active">
+  <h2 style="font-size: 1.8rem; margin-bottom: 12px;">Inicia sesión para entrar</h2>
+  <p class="tiny-note">Para Google necesitas poner tu <strong>Client ID</strong> real en el código. Sin eso, usa el modo demo para probar todo.</p>
+
+  <div id="g_id_signin" style="margin: 18px auto 8px; display: flex; justify-content: center;"></div>
+
+  <div class="auth-actions">
+    <button class="btn btn-ghost" id="demoLoginBtn">Entrar en modo demo</button>
+  </div>
+</section>
+
+<section id="dashboard" class="dashboard">
+  <div class="topbar glass">
+    <div class="user-block">
+      <div class="user-name">Hola, <span id="userName">-</span></div>
+      <div class="user-email" id="userEmail">-</div>
     </div>
+    <div class="credits" id="creditsDisplay">0 créditos</div>
+    <button class="btn btn-danger" id="logoutBtn">Cerrar sesión</button>
+  </div>
 
-    <!-- DASHBOARD -->
-    <div id="dashboard" class="dashboard" style="display: none;">
-        <div class="user-info glass" style="padding: 2rem;">
-            <div>
-                <div style="font-size: 1.2rem; opacity: 0.9;">Hola, <span id="userName">-</span></div>
-                <div id="userEmail" style="font-size: 0.9rem; opacity: 0.7;">email@ejemplo.com</div>
-            </div>
-            <div class="credits" id="creditsDisplay">200 créditos</div>
-            <button class="btn btn-primary" onclick="logout()" style="padding: 1rem 2rem; width: auto;">Cerrar Sesión</button>
-        </div>
-
-        <!-- PLANS -->
-        <div style="text-align: center; margin: 3rem 0;">
-            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Planes Premium</h2>
-            <p>Desbloquea modelos PRO y más créditos</p>
-        </div>
-        <div class="plans-grid">
-            <div class="plan-card glass">
-                <h3>Gratis</h3>
-                <div class="plan-price">$0 <span style="font-size: 1rem;">/mes</span></div>
-                <ul style="list-style: none; padding: 2rem 0;">
-                    <li>✅ 200 créditos/mes</li>
-                    <li>✅ Modelo Basic</li>
-                    <li>✅ Videos 720p</li>
-                    <li>❌ Sin prioridad</li>
-                </ul>
-                <button class="btn btn-primary" disabled>Actual</button>
-            </div>
-            <div class="plan-card glass popular">
-                <div style="position: absolute; top: 1rem; right: 1rem; background: #60a5fa; color: black; padding: 0.3rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">POPULAR</div>
-                <h3>Pro</h3>
-                <div class="plan-price">$19 <span style="font-size: 1rem;">/mes</span></div>
-                <ul style="list-style: none; padding: 2rem 0;">
-                    <li>✅ 2,000 créditos/mes</li>
-                    <li>✅ Modelos Pro + Premium</li>
-                    <li>✅ Videos 4K 60fps</li>
-                    <li>✅ Render prioritario</li>
-                </ul>
-                <button class="btn btn-success" onclick="upgradePlan('pro')">Elegir Pro</button>
-            </div>
-            <div class="plan-card glass">
-                <h3>Business</h3>
-                <div class="plan-price">$49 <span style="font-size: 1rem;">/mes</span></div>
-                <ul style="list-style: none; padding: 2rem 0;">
-                    <li>✅ 5,000 créditos/mes</li>
-                    <li>✅ Todo ilimitado</li>
-                    <li>✅ API acceso</li>
-                    <li>✅ Soporte 24/7</li>
-                </ul>
-                <button class="btn btn-primary" onclick="upgradePlan('business')">Elegir Business</button>
-            </div>
-        </div>
-
-        <!-- EDITOR -->
-        <div class="glass" style="padding: 3rem;">
-            <div class="editor-section">
-                <div class="prompt-area">
-                    <h2 style="font-size: 2.2rem; margin-bottom: 2rem;">🎬 Genera tu Video IA</h2>
-                    
-                    <div class="form-group">
-                        <label>📝 Prompt detallado:</label>
-                        <textarea id="prompt" rows="5" 
-                            placeholder="Ej: 'Video profesional 15s: drone futurista sobre ciudad cyberpunk al atardecer, transiciones glitch CapCut, texto animado Crisdan AI, música épica, 4K 60fps, estilo cinematic Hollywood'"></textarea>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                        <div class="form-group">
-                            <label>⏱️ Duración:</label>
-                            <input type="range" id="duration" min="5" max="60" value="15">
-                            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
-                                <span id="durationDisplay">15 segundos</span>
-                                <span id="creditsCost">10 créditos</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button class="btn btn-primary" id="generateBtn" onclick="generateVideo()" style="font-size: 1.4rem; padding: 1.8rem;">
-                        🚀 Generar Video (<span id="currentCost">10</span> créditos)
-                    </button>
-
-                    <div id="status" class="status"></div>
-                    <div id="videoPreview"></div>
-                </div>
-
-                <div class="model-selector">
-                    <h3 style="margin-bottom: 1.5rem;">🤖 Modelos de IA</h3>
-                    
-                    <div class="model-card active" data-model="basic">
-                        <strong>Basic</strong> (Gratis)
-                        <div style="font-size: 0.9rem; opacity: 0.8;">Videos 720p • 10 créditos</div>
-                    </div>
-                    
-                    <div class="model-card model-pro" data-model="pro">
-                        <strong>Pro</strong> ⭐
-                        <div style="font-size: 0.9rem; opacity: 0.8;">1080p 30fps • 20 créditos</div>
-                    </div>
-                    
-                    <div class="model-card model-premium" data-model="premium">
-                        <strong>Premium</strong> 🔥
-                        <div style="font-size: 0.9rem; opacity: 0.8;">4K 60fps • 50 créditos</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <section style="margin-top: 18px;">
+    <h2 style="font-size: 2rem; margin-bottom: 8px;">Planes</h2>
+    <p class="tiny-note">Estos planes solo cambian la interfaz y el costo local. No cobran nada ni conectan pagos.</p>
+    <div class="grid-plans">
+      <article class="plan-card glass">
+        <h3>Gratis</h3>
+        <div class="plan-price">$0</div>
+        <ul class="plan-list">
+          <li>✅ 200 créditos</li>
+          <li>✅ Generación local</li>
+          <li>✅ Exportación WebM</li>
+        </ul>
+        <button class="btn btn-ghost" disabled>Actual</button>
+      </article>
+      <article class="plan-card glass popular">
+        <div class="badge">POPULAR</div>
+        <h3>Pro</h3>
+        <div class="plan-price">$19</div>
+        <ul class="plan-list">
+          <li>✅ 2.000 créditos</li>
+          <li>✅ Más calidad visual</li>
+          <li>✅ Prioridad en cola</li>
+        </ul>
+        <button class="btn btn-success" data-upgrade="pro">Elegir Pro</button>
+      </article>
+      <article class="plan-card glass">
+        <h3>Business</h3>
+        <div class="plan-price">$49</div>
+        <ul class="plan-list">
+          <li>✅ 5.000 créditos</li>
+          <li>✅ Presets avanzados</li>
+          <li>✅ Más duración</li>
+        </ul>
+        <button class="btn btn-primary" data-upgrade="business">Elegir Business</button>
+      </article>
     </div>
+  </section>
 
-    <script>
-        // === CRISDAN AI - SISTEMA COMPLETO PROFESIONAL ===
-        let currentUser = null;
-        let credits = 200;
-        let currentPlan = 'free';
-        let selectedModel = 'basic';
+  <section class="glass panel" style="margin-top: 18px;">
+    <div class="editor">
+      <div>
+        <h2 style="font-size: 2rem; margin-bottom: 16px;">Genera tu video</h2>
 
-        // GOOGLE AUTH
-        window.onload = function () {
-            google.accounts.id.initialize({
-                client_id: 'TU_GOOGLE_CLIENT_ID_AQUI.apps.googleusercontent.com', // Reemplaza con tu Client ID
-                callback: handleCredentialResponse,
-                auto_select: false,
-                cancel_on_tap_outside: false,
-            });
+        <div class="form-group">
+          <label for="prompt">Prompt</label>
+          <textarea id="prompt" placeholder="Ejemplo: video futurista de una ciudad al atardecer, texto animado, estilo cinematográfico, movimiento suave"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="duration">Duración</label>
+          <input type="range" id="duration" min="5" max="20" value="8" />
+          <div class="range-row">
+            <span id="durationLabel">8 segundos</span>
+            <span id="currentCost">10 créditos</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="generateBtn">Generar video</button>
+
+        <div id="status" class="status"></div>
+
+        <div class="preview-wrap">
+          <video id="videoPreview" controls playsinline></video>
+          <a id="downloadLink" class="btn btn-success download-link" href="#" download style="display:none;">Descargar video</a>
+        </div>
+      </div>
+
+      <aside class="model-selector">
+        <h3 style="margin-bottom: 12px;">Modelos</h3>
+        <div class="model-card active" data-model="basic">
+          <strong>Basic</strong>
+          <div class="model-cost">720p visual • 10 créditos</div>
+        </div>
+        <div class="model-card model-pro" data-model="pro">
+          <strong>Pro</strong>
+          <div class="model-cost">1080p visual • 20 créditos</div>
+        </div>
+        <div class="model-card model-premium" data-model="premium">
+          <strong>Premium</strong>
+          <div class="model-cost">Estilo más intenso • 50 créditos</div>
+        </div>
+        <p class="tiny-note" style="margin-top: 12px;">Esto no usa IA remota. Genera un video real dentro del navegador con canvas + MediaRecorder, así sí funciona sin backend.</p>
+      </aside>
+    </div>
+  </section>
+</section>
+
+  </div><canvas id="recordCanvas" class="hidden-canvas" width="1280" height="720"></canvas>
+
+  <script>
+    (() => {
+      const GOOGLE_CLIENT_ID = '50396542320-k2ifr2njerkupvh17g5ifbmup59187kq.apps.googleusercontent.com';
+      const STORAGE_KEY = 'crisdan_ai_state_v1';
+
+      const state = {
+        user: null,
+        credits: 200,
+        plan: 'free',
+        selectedModel: 'basic',
+        generating: false,
+        downloadUrl: ''
+      };
+
+      const els = {
+        authSection: document.getElementById('authSection'),
+        dashboard: document.getElementById('dashboard'),
+        userName: document.getElementById('userName'),
+        userEmail: document.getElementById('userEmail'),
+        creditsDisplay: document.getElementById('creditsDisplay'),
+        prompt: document.getElementById('prompt'),
+        duration: document.getElementById('duration'),
+        durationLabel: document.getElementById('durationLabel'),
+        currentCost: document.getElementById('currentCost'),
+        status: document.getElementById('status'),
+        generateBtn: document.getElementById('generateBtn'),
+        videoPreview: document.getElementById('videoPreview'),
+        downloadLink: document.getElementById('downloadLink'),
+        recordCanvas: document.getElementById('recordCanvas'),
+        demoLoginBtn: document.getElementById('demoLoginBtn'),
+        logoutBtn: document.getElementById('logoutBtn'),
+        modelCards: Array.from(document.querySelectorAll('.model-card'))
+      };
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          user: state.user,
+          credits: state.credits,
+          plan: state.plan,
+          selectedModel: state.selectedModel
+        }));
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const stored = JSON.parse(raw);
+          Object.assign(state, stored || {});
+        } catch (_) {}
+      }
+
+      function setStatus(type, html) {
+        els.status.className = `status show ${type}`;
+        els.status.innerHTML = html;
+      }
+
+      function clearStatus() {
+        els.status.className = 'status';
+        els.status.innerHTML = '';
+      }
+
+      function showAuth() {
+        els.authSection.classList.add('active');
+        els.dashboard.classList.remove('active');
+      }
+
+      function showDashboard() {
+        els.authSection.classList.remove('active');
+        els.dashboard.classList.add('active');
+      }
+
+      function modelCost(model) {
+        if (model === 'pro') return 20;
+        if (model === 'premium') return 50;
+        return 10;
+      }
+
+      function updateModelUI() {
+        els.modelCards.forEach(card => {
+          card.classList.toggle('active', card.dataset.model === state.selectedModel);
+        });
+        els.currentCost.textContent = `${modelCost(state.selectedModel)} créditos`;
+      }
+
+      function updateDurationUI() {
+        els.durationLabel.textContent = `${els.duration.value} segundos`;
+        els.currentCost.textContent = `${modelCost(state.selectedModel)} créditos`;
+      }
+
+      function updateUserUI() {
+        if (state.user) {
+          els.userName.textContent = state.user.name || 'Usuario';
+          els.userEmail.textContent = state.user.email || 'modo demo';
+        }
+        els.creditsDisplay.textContent = `${state.credits} créditos`;
+      }
+
+      function base64UrlDecode(input) {
+        const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
+        const pad = base64.length % 4;
+        const padded = base64 + (pad ? '='.repeat(4 - pad) : '');
+        return atob(padded);
+      }
+
+      function parseJwt(token) {
+        const payload = token.split('.')[1];
+        return JSON.parse(base64UrlDecode(payload));
+      }
+
+      function loginWithPayload(payload, isDemo = false) {
+        state.user = {
+          name: payload.name || 'Demo User',
+          email: payload.email || 'demo@local',
+          picture: payload.picture || ''
+        };
+        if (isDemo) {
+          state.credits = 200;
+          state.plan = 'free';
+        }
+        saveState();
+        updateUserUI();
+        showDashboard();
+        clearStatus();
+      }
+
+      function handleCredentialResponse(response) {
+        try {
+          const payload = parseJwt(response.credential);
+          loginWithPayload(payload, false);
+        } catch (err) {
+          console.error(err);
+          setStatus('error', 'No se pudo leer la respuesta de Google. Revisa el Client ID y la consola.');
+        }
+      }
+
+      function initGoogleButton() {
+        if (!window.google || !google.accounts || !google.accounts.id) {
+          return;
+        }
+
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+
+        google.accounts.id.renderButton(document.getElementById('g_id_signin'), {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+          width: 280
+        });
+      }
+
+      function demoLogin() {
+        loginWithPayload({
+          name: 'Cris',
+          email: 'demo@crisdan.local'
+        }, true);
+      }
+
+      function logout() {
+        state.user = null;
+        state.credits = 200;
+        state.plan = 'free';
+        state.selectedModel = 'basic';
+        saveState();
+        updateModelUI();
+        updateUserUI();
+        els.videoPreview.removeAttribute('src');
+        els.videoPreview.load();
+        els.downloadLink.style.display = 'none';
+        showAuth();
+      }
+
+      function upgradePlan(plan) {
+        state.plan = plan;
+        if (plan === 'pro') state.credits = Math.max(state.credits, 2000);
+        if (plan === 'business') state.credits = Math.max(state.credits, 5000);
+        saveState();
+        updateUserUI();
+        setStatus('success', `Plan cambiado a <strong>${plan.toUpperCase()}</strong>.`);
+      }
+
+      function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(/\s+/);
+        let line = '';
+        const lines = [];
+        for (const word of words) {
+          const test = line ? `${line} ${word}` : word;
+          if (ctx.measureText(test).width > maxWidth && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        }
+        if (line) lines.push(line);
+        lines.forEach((ln, i) => ctx.fillText(ln, x, y + i * lineHeight));
+        return lines.length * lineHeight;
+      }
+
+      function paletteForModel(model) {
+        if (model === 'pro') return ['#0f172a', '#0ea5e9', '#14b8a6'];
+        if (model === 'premium') return ['#1f1147', '#ef4444', '#f59e0b'];
+        return ['#111827', '#6366f1', '#8b5cf6'];
+      }
+
+      function selectMimeType() {
+        const options = [
+          'video/webm;codecs=vp9',
+          'video/webm;codecs=vp8',
+          'video/webm'
+        ];
+        return options.find(type => MediaRecorder.isTypeSupported(type)) || '';
+      }
+
+      async function generateVideo() {
+        if (state.generating) return;
+
+        const prompt = els.prompt.value.trim();
+        const duration = Number(els.duration.value);
+        const cost = modelCost(state.selectedModel);
+
+        if (!prompt) {
+          setStatus('error', 'Escribe un prompt antes de generar.');
+          return;
+        }
+        if (state.credits < cost) {
+          setStatus('error', 'No tienes suficientes créditos para ese modelo.');
+          return;
+        }
+
+        state.generating = true;
+        els.generateBtn.disabled = true;
+        els.downloadLink.style.display = 'none';
+        clearStatus();
+        setStatus('loading', '<div class="spinner"></div>Generando video real dentro del navegador...');
+
+        const canvas = els.recordCanvas;
+        const ctx = canvas.getContext('2d');
+        const [bg, accent1, accent2] = paletteForModel(state.selectedModel);
+        const totalFrames = Math.max(1, Math.round(duration * 30));
+        const stream = canvas.captureStream(30);
+        const mimeType = selectMimeType();
+        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        const chunks = [];
+        let frame = 0;
+        let raf = 0;
+        let stopped = false;
+
+        recorder.ondataavailable = (ev) => {
+          if (ev.data && ev.data.size > 0) chunks.push(ev.data);
         };
 
-        function handleCredentialResponse(response) {
-            try {
-                const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                currentUser = {
-                    name: payload.name,
-                    email: payload.email,
-                    picture: payload.picture
-                };
-                
-                // Simular backend - en producción: enviar a tu API
-                credits = 200;
-                updateUI();
-                document.getElementById('authSection').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-            } catch (e) {
-                console.error('Auth error:', e);
+        const drawFrame = () => {
+          const t = frame / totalFrames;
+          const w = canvas.width;
+          const h = canvas.height;
+
+          const gradient = ctx.createLinearGradient(0, 0, w, h);
+          gradient.addColorStop(0, bg);
+          gradient.addColorStop(0.45, accent1);
+          gradient.addColorStop(1, accent2);
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, w, h);
+
+          // Light overlay
+          ctx.fillStyle = 'rgba(255,255,255,0.06)';
+          for (let i = 0; i < 12; i++) {
+            const x = ((i * 110) + frame * 7) % (w + 160) - 80;
+            const y = 80 + i * 48 + Math.sin((t * Math.PI * 2) + i) * 18;
+            ctx.beginPath();
+            ctx.arc(x, y, 26 + (i % 4) * 6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Dark panel
+          ctx.fillStyle = 'rgba(5, 10, 26, 0.58)';
+          roundRect(ctx, 70, 72, w - 140, h - 144, 32, true, false);
+
+          // Headline
+          ctx.fillStyle = '#fff';
+          ctx.font = '700 48px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('CRISDAN AI', 120, 170);
+
+          // Prompt text
+          ctx.fillStyle = 'rgba(255,255,255,0.92)';
+          ctx.font = '600 30px Inter, sans-serif';
+          const usedHeight = wrapText(ctx, prompt, 120, 245, w - 240, 40);
+
+          // Progress bar
+          const barY = h - 210;
+          const barW = w - 240;
+          ctx.fillStyle = 'rgba(255,255,255,0.16)';
+          roundRect(ctx, 120, barY, barW, 16, 8, true, false);
+          ctx.fillStyle = '#fff';
+          roundRect(ctx, 120, barY, Math.max(16, barW * t), 16, 8, true, false);
+
+          // Footer info
+          ctx.font = '500 24px Inter, sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.fillText(`Modelo: ${state.selectedModel.toUpperCase()}  •  ${duration}s`, 120, h - 154);
+          ctx.fillText(`Créditos restantes: ${state.credits - cost}`, 120, h - 114);
+          ctx.fillText(`Frame ${frame + 1}/${totalFrames}`, w - 300, h - 114);
+
+          // Corner spark
+          ctx.fillStyle = 'rgba(255,255,255,0.20)';
+          ctx.beginPath();
+          ctx.arc(w - 165, 150, 58 + Math.sin(t * Math.PI * 2) * 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.35)';
+          ctx.beginPath();
+          ctx.arc(w - 165, 150, 26, 0, Math.PI * 2);
+          ctx.fill();
+
+          frame += 1;
+          if (!stopped && frame < totalFrames) {
+            raf = requestAnimationFrame(drawFrame);
+          }
+        };
+
+        function finish() {
+          if (stopped) return;
+          stopped = true;
+          cancelAnimationFrame(raf);
+          recorder.stop();
+        }
+
+        recorder.onstop = () => {
+          try {
+            const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+            const url = URL.createObjectURL(blob);
+
+            if (state.downloadUrl) URL.revokeObjectURL(state.downloadUrl);
+            state.downloadUrl = url;
+
+            els.videoPreview.src = url;
+            els.downloadLink.href = url;
+            els.downloadLink.download = `crisdan-ai-${Date.now()}.webm`;
+            els.downloadLink.style.display = 'inline-block';
+
+            state.credits -= cost;
+            saveState();
+            updateUserUI();
+            setStatus('success', 'Video generado correctamente y listo para reproducir o descargar.');
+          } catch (err) {
+            console.error(err);
+            setStatus('error', 'Se generó el proceso, pero falló al crear el archivo final.');
+          } finally {
+            state.generating = false;
+            els.generateBtn.disabled = false;
+          }
+        };
+
+        try {
+          recorder.start();
+          drawFrame();
+          setTimeout(finish, duration * 1000);
+        } catch (err) {
+          console.error(err);
+          state.generating = false;
+          els.generateBtn.disabled = false;
+          setStatus('error', 'Tu navegador no soporta MediaRecorder con este formato. Prueba con Chrome o Edge actualizados.');
+        }
+      }
+
+      function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+        const r = Math.min(radius, width / 2, height / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + width, y, x + width, y + height, r);
+        ctx.arcTo(x + width, y + height, x, y + height, r);
+        ctx.arcTo(x, y + height, x, y, r);
+        ctx.arcTo(x, y, x + width, y, r);
+        ctx.closePath();
+        if (fill) ctx.fill();
+        if (stroke) ctx.stroke();
+      }
+
+      function bindEvents() {
+        els.duration.addEventListener('input', updateDurationUI);
+        els.generateBtn.addEventListener('click', generateVideo);
+        els.demoLoginBtn.addEventListener('click', demoLogin);
+        els.logoutBtn.addEventListener('click', logout);
+        els.modelCards.forEach(card => {
+          card.addEventListener('click', () => {
+            state.selectedModel = card.dataset.model;
+            saveState();
+            updateModelUI();
+          });
+        });
+        document.querySelectorAll('[data-upgrade]').forEach(btn => {
+          btn.addEventListener('click', () => upgradePlan(btn.dataset.upgrade));
+        });
+      }
+
+      function boot() {
+        loadState();
+        bindEvents();
+        updateModelUI();
+        updateDurationUI();
+        updateUserUI();
+
+        if (state.user) {
+          showDashboard();
+        } else {
+          showAuth();
+        }
+
+        if (GOOGLE_CLIENT_ID.includes('50396542320-k2ifr2njerkupvh17g5ifbmup59187kq.apps.googleusercontent.com')) {
+          // Deja el botón visible, pero no intenta autenticar con un client ID inválido.
+          setTimeout(() => {
+            if (!state.user) {
+              els.demoLoginBtn.focus();
             }
+          }, 250);
+          return;
         }
 
-        function logout() {
-            currentUser = null;
-            credits = 0;
-            document.getElementById('dashboard').style.display = 'none';
-            document.getElementById('authSection').style.display = 'block';
-        }
+        initGoogleButton();
+      }
 
-        // UI UPDATES
-        function updateUI() {
-            document.getElementById('userName').textContent = currentUser.name;
-            document.getElementById('userEmail').textContent = currentUser.email;
-            document.getElementById('creditsDisplay').textContent = `${credits} créditos`;
-        }
-
-        // MODEL SELECTION
-        document.querySelectorAll('.model-card').forEach(card => {
-            card.addEventListener('click', function() {
-                document.querySelectorAll('.model-card').forEach(c => c.classList.remove('active'));
-                this.classList.add('active');
-                selectedModel = this.dataset.model
+      window.addEventListener('load', boot);
+    })();
+  </script></body>
+        </html>
